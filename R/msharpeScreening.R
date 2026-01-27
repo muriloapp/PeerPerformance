@@ -29,7 +29,7 @@
 
     liststocks <- liststocks[1:(length(liststocks) - 1)]
 
-	  z <- parallel::clusterApplyLB(cl = cl, x = as.list(liststocks), fun = msharpeScreeningi,
+	z <- parallel::clusterApplyLB(cl = cl, x = as.list(liststocks), fun = msharpeScreeningi,
                                   rdata = X, level = level, T = T, N = N, na.neg = na.neg, nBoot = ctr$nBoot,
                                   bsids = bsids, minObs = ctr$minObs, type = ctr$type, hac = ctr$hac,
                                   b = ctr$bBoot, ttype = ctr$ttype, pBoot = ctr$pBoot)
