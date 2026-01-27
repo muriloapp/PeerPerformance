@@ -26,6 +26,20 @@
 
   if (length(liststocks) > 1) {
     cl <- parallel::makeCluster(ctr$nCore)
+    
+    ######
+    pkg_path <- getOption("PeerPerformance.dev_path",
+                          normalizePath(getwd(), winslash="/", mustWork=TRUE))
+    
+    parallel::clusterExport(cl, "pkg_path", envir = environment())
+    parallel::clusterEvalQ(cl, {
+      library(pkgload)
+      pkgload::load_all(pkg_path, quiet = TRUE)
+      NULL
+    })
+    
+    
+    ######
 
     liststocks <- liststocks[1:(length(liststocks) - 1)]
 
