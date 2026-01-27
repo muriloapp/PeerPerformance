@@ -26,7 +26,7 @@
 
   if (length(liststocks) > 1) {
     cl <- parallel::makeCluster(ctr$nCore)
-
+    
     liststocks <- liststocks[1:(length(liststocks) - 1)]
 
 	z <- parallel::clusterApplyLB(cl = cl, x = as.list(liststocks), fun = msharpeScreeningi,

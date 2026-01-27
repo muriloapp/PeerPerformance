@@ -2,6 +2,8 @@
 
 S3method(plot,SCREENING)
 S3method(plot,pp_screening)
+S3method(print,summary.SCREENING)
+S3method(summary,SCREENING)
 export(alphaScreening)
 export(alphaTesting)
 export(msharpe)
