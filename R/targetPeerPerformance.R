@@ -33,6 +33,17 @@
   if (anyDuplicated(idx)) stop("Duplicate entries in 'funds' are not allowed.")
   m <- length(idx)
   
+  # argument consistency checks 
+  if (method != "alpha" && !is.null(factors)) {
+    stop("'factors' is only used when method = 'alpha'.")
+  }
+  if (method != "msharpe" && !missing(level)) {
+    stop("'level' is only used when method = 'msharpe'.")
+  }
+  if (method != "msharpe" && !missing(na.neg)) {
+    stop("'na.neg' is only used when method = 'msharpe'.")
+  }
+  
   # basic alpha-specific checks (ONLY if factors provided, as in your original code)
   if (method == "alpha" && !is.null(factors)) {
     factors <- as.matrix(factors)
@@ -154,6 +165,9 @@
     )
   }
   
+  lambda_out <- if (!is.null(pi$lambda)) pi$lambda else lambda_sel
+  if (!is.null(lambda_out) && length(lambda_out) == m) names(lambda_out) <- nm
+  
   # info ONLY for focals
   Xf <- Xp[, sel, drop = FALSE]
   info <- switch(
@@ -196,10 +210,6 @@
     sharpe  = "dsharpe",
     msharpe = "dmsharpe"
   )
-  
-  # lambda to return (what was actually used for the focals)
-  lambda_out <- lambda_sel
-  if (!is.null(lambda_out) && length(lambda_out) > 1L) names(lambda_out) <- nm
   
   # base output (focal-only vectors + focal-vs-all matrices)
   res <- list(
