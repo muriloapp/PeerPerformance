@@ -128,7 +128,7 @@ print.summary.SCREENING <- function(x, ...) {
   s <- x$stats
   
   cat(sprintf("%s summary\n", x$measure))
-  cat(sprintf("  Max   : %s\n\n", fmt5(s["max"])))
+  cat(sprintf("  Max   : %s\n", fmt5(s["max"])))
   cat(sprintf("  75%%   : %s\n", fmt5(s["q75"])))
   cat(sprintf("  Mean  : %s\n", fmt5(s["mean"])))
   cat(sprintf("  Median: %s\n", fmt5(s["med"])))
