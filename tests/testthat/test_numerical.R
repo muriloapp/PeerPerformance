@@ -452,3 +452,22 @@ test_that("asymptotic screening does not depend on the bootstrap block length", 
   expect_true(any(!is.na(s1$pval)))
   expect_true(any(!is.na(m1$pval)))
 })
+
+test_that("plot methods accept the graphical arguments documented in '...'", {
+  pf <- tempfile(fileext = ".pdf"); pdf(pf); on.exit({dev.off(); unlink(pf)})
+  sc  <- alphaScreening(hfdata[, 1:8], control = list(nCore = 1))
+  scb <- alphaScreening(hfdata[, 1:8], factors = hfdata[, 50:51],
+                        control = list(nCore = 1, screen_beta = TRUE))
+  eh  <- exposureHeterogeneity(scb)
+  rl  <- rollScreening(hfdata[, 1:12], width = 40, by = 20,
+                       control = list(nCore = 1))
+  one <- alphaScreening(hfdata[, 1], Y = hfdata[, 11:20],
+                        control = list(nCore = 1))
+  ## these all used to fail with "matched by multiple actual arguments"
+  expect_silent(plot(sc,  main = "screening"))
+  expect_silent(plot(one, main = "single fund"))
+  expect_silent(plot(eh,  main = "heterogeneity", ylab = "h"))
+  expect_silent(plot(rl,  xlab = "month", ylab = "ratio"))
+  ## and the defaults still apply when nothing is passed
+  expect_silent(plot(sc)); expect_silent(plot(eh)); expect_silent(plot(rl))
+})

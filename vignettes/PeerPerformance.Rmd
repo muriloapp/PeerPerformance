@@ -113,6 +113,12 @@ All screening/testing functions share a `control` list. Common fields include
 `0.4`/`0.6`), `hac` (HAC standard errors), and for the Sharpe/mSR routines
 `type` (asymptotic/bootstrap), `nBoot`, and `bBoot`. See `?alphaScreening`.
 
+Note that with the data-driven `lambda` (the default) the bias correction of
+$\hat\pi^0$ dominates the run time on large universes. Setting
+`control = list(fastAdjust = TRUE)` inverts it in vectorised form and is
+several times faster, at the price of differing from the published code path
+by a few $10^{-5}$; and setting a fixed `lambda` skips the selection entirely.
+
 ## References
 
 - Ardia, D., Boudt, K. (2018). The peer performance ratios of hedge funds.

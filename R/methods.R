@@ -13,6 +13,15 @@
   stop("unknown performance measure in the 'SCREENING' object")
 }
 
+## internal: merge caller-supplied graphical arguments over the method's
+## defaults, so that the documented "further graphical arguments" in '...'
+## really are accepted. Passing e.g. main= or xlab= to a plot method used to
+## raise "formal argument matched by multiple actual arguments".
+.gpar <- function(defaults, dots) {
+  if (length(dots) > 0L) defaults[names(dots)] <- dots
+  defaults
+}
+
 ## internal: single focal fund (one stacked bar of pi+/pi0/pi-)
 .plotScreeningSingle <- function(pipos, pizero, pineg, ny, colorset, label, ...) {
   mat <- matrix(100 * c(pipos, pizero, pineg), ncol = 1)
@@ -24,8 +33,10 @@
   } else {
     paste0("Focal fund vs peer group of ", ny, " (", label, ")")
   }
-  graphics::barplot(mat, horiz = TRUE, xlim = c(0, 100), col = colorset,
-                    border = NA, names.arg = "", axes = FALSE, main = main, ...)
+  do.call(graphics::barplot,
+          .gpar(list(height = mat, horiz = TRUE, xlim = c(0, 100),
+                     col = colorset, border = NA, names.arg = "",
+                     axes = FALSE, main = main), list(...)))
   graphics::axis(side = 1, at = seq(0, 100, by = 25),
                  labels = paste0(seq(0, 100, by = 25), "%"))
   graphics::box()
@@ -436,8 +447,10 @@ exposureHeterogeneity <- function(object) {
 plot.exposureHeterogeneity <- function(x, ...) {
   h <- x$heterogeneity
   names(h) <- x$coefficient
-  graphics::barplot(h, ylim = c(0, 1), ylab = expression(1 - hat(pi)^0),
-                    main = "Factor exposure heterogeneity", ...)
+  do.call(graphics::barplot,
+          .gpar(list(height = h, ylim = c(0, 1),
+                     ylab = expression(1 - hat(pi)^0),
+                     main = "Factor exposure heterogeneity"), list(...)))
   invisible(x)
 }
 
@@ -560,9 +573,11 @@ plot.SCREENING <- function(x, nblock = NULL, reference = NULL, band = 27.5,
 
   # right panel: stacked outperformance / equal / underperformance ratios
   mainstr <- expression(hat(pi)^"+" * " / " * hat(pi)^0 * " / " * hat(pi)^"-")
-  graphics::barplot(100 * mat, horiz = TRUE, space = 0, names.arg = NULL,
-                    col = colorset, border = NA, xlim = c(0, 100), axes = FALSE,
-                    main = mainstr, ...)
+  do.call(graphics::barplot,
+          .gpar(list(height = 100 * mat, horiz = TRUE, space = 0,
+                     names.arg = NULL, col = colorset, border = NA,
+                     xlim = c(0, 100), axes = FALSE, main = mainstr),
+                list(...)))
   graphics::axis(side = 1, at = seq(0, 100, by = 25),
                  labels = paste0(seq(0, 100, by = 25), "%"))
   graphics::box()

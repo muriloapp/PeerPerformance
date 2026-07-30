@@ -160,14 +160,19 @@ plot.rollScreening <- function(x, what = NULL, legend = TRUE, ...) {
     what <- if (beta) "heterogeneity" else "ratios"
   }
   hasdate <- !is.null(x$date)
+  # without dates the x axis carries window-end indices, which need a label
+  xlab0 <- if (hasdate) "" else "window end (observation index)"
 
   if (what == "ratios" && !beta) {
     ord <- order(x$index)
     xs <- (if (hasdate) x$date else x$index)[ord]
-    graphics::matplot(xs, cbind(x$pipos[ord], x$pizero[ord], x$pineg[ord]),
-                      type = "l", lty = 1, lwd = 2,
-                      col = c("black", "grey60", "grey40"),
-                      xlab = "", ylab = "average ratio", ylim = c(0, 1), ...)
+    do.call(graphics::matplot,
+            .gpar(list(x = xs,
+                       y = cbind(x$pipos[ord], x$pizero[ord], x$pineg[ord]),
+                       type = "l", lty = 1, lwd = 2,
+                       col = c("black", "grey60", "grey40"),
+                       xlab = xlab0, ylab = "average ratio",
+                       ylim = c(0, 1)), list(...)))
     if (legend) {
       graphics::legend("topright", bty = "n", lwd = 2,
                        col = c("black", "grey60", "grey40"),
@@ -186,8 +191,10 @@ plot.rollScreening <- function(x, what = NULL, legend = TRUE, ...) {
       xs <- (if (hasdate) sub$date else sub$index)[ord]
       ys <- sub[[what]][ord]
       if (first) {
-        graphics::plot(xs, ys, type = "l", lwd = 2, col = cols[i],
-                       ylim = c(0, 1), xlab = "", ylab = ylab, ...)
+        do.call(graphics::plot,
+                .gpar(list(x = xs, y = ys, type = "l", lwd = 2, col = cols[i],
+                           ylim = c(0, 1), xlab = xlab0, ylab = ylab),
+                      list(...)))
         first <- FALSE
       } else {
         graphics::lines(xs, ys, lwd = 2, col = cols[i])
