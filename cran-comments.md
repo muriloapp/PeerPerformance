@@ -14,23 +14,7 @@ for the full list.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 2 notes
-
-Both notes are specific to the local machine and are not package issues:
-
-```
-* checking top-level files ... NOTE
-Files 'README.md' or 'NEWS.md' cannot be checked without 'pandoc' being installed.
-```
-pandoc is not on the PATH of the local R session.
-
-```
-* checking HTML version of manual ... NOTE
-Skipping checking HTML validation: 'tidy' doesn't look like recent enough HTML Tidy.
-```
-The local `tidy` is the version shipped with macOS.
-
-Neither note is expected on the CRAN check machines.
+0 errors | 0 warnings | 0 notes
 
 ## Reverse dependencies
 
