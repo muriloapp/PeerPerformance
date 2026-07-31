@@ -283,9 +283,12 @@ print.summary.SCREENING <- function(x, ...) {
   cat("\nPeer performance screening summary (", x$measure, ")\n", sep = "")
   cat("  Funds: ", x$n_funds, "\n\n", sep = "")
   s <- x$stats
-  cat("  ", x$measure, " distribution: min ", fmt(s["min"]), " | 25% ", fmt(s["q25"]),
-      " | med ", fmt(s["med"]), " | mean ", fmt(s["mean"]), " | 75% ", fmt(s["q75"]),
-      " | max ", fmt(s["max"]), "\n\n", sep = "")
+  # split over two lines: a single line overruns an 80-column console (and the
+  # text block of a typeset document) once the measure name is prepended
+  cat("  ", x$measure, " distribution:\n", sep = "")
+  cat("    min ", fmt(s["min"]), " | 25% ", fmt(s["q25"]), " | med ", fmt(s["med"]),
+      "\n    mean ", fmt(s["mean"]), " | 75% ", fmt(s["q75"]), " | max ",
+      fmt(s["max"]), "\n\n", sep = "")
   cat("Top funds (by ", x$measure, "):\n", sep = "")
   print(round_df(x$top), row.names = FALSE, right = TRUE)
   cat("\nTop funds (by outperformance ratio pi+):\n")

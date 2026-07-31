@@ -90,7 +90,7 @@ test_that("sharpe/msharpe screening on an unbalanced panel has no NaN (PR #14)",
   ## for some pairs, producing NaN p-values
   expect_false(any(is.nan(ss$pval)))
   expect_false(any(is.nan(ms$pval)))
-  expect_true(all(ss$pizero + ss$pipos + ss$pineg - 1 < 1e-8, na.rm = TRUE))
+  expect_true(all(abs(ss$pizero + ss$pipos + ss$pineg - 1) < 1e-8, na.rm = TRUE))
 })
 
 test_that("audit fixes: degenerate inputs are handled", {
