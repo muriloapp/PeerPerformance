@@ -72,7 +72,9 @@
 #' \donttest{
 #' data("hfdata")
 #' set.seed(1234)
-#' roll <- rollScreening(hfdata, screen = "alpha", width = 36, by = 6,
+#' ## a subset keeps the example quick; drop the column index to screen the
+#' ## whole universe
+#' roll <- rollScreening(hfdata[, 1:20], screen = "alpha", width = 36, by = 6,
 #'                       control = list(nCore = 1))
 #' plot(roll)
 #' }

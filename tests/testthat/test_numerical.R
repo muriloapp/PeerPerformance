@@ -153,8 +153,9 @@ test_that("as.data.frame and exposureHeterogeneity work", {
   set.seed(1)
   fac <- matrix(rnorm(nrow(hfdata) * 2), ncol = 2,
                 dimnames = list(NULL, c("MKT", "SMB")))
+  ## lambda fixed: the assertions are on shapes and labels, not on lambda
   scb <- alphaScreening(hfdata[, 1:15], factors = fac, screen_beta = TRUE,
-                        control = list(nCore = 1))
+                        control = list(nCore = 1, lambda = 0.5))
   expect_equal(rownames(scb$pizero), c("alpha", "MKT", "SMB"))
   dfb <- as.data.frame(scb)
   expect_equal(nrow(dfb), 15L * 3L)
@@ -182,9 +183,12 @@ test_that("screen_beta can be set via control and the argument overrides it", {
 })
 
 test_that("rollScreening returns a tidy time series", {
+  ## this test checks the shape of the output, not the value of lambda, so the
+  ## threshold is fixed: the data-driven selection dominates the run time and
+  ## would be re-run for every window
   set.seed(1234)
-  roll <- rollScreening(hfdata[, 1:30], screen = "alpha", width = 36, by = 8,
-                        control = list(nCore = 1))
+  roll <- rollScreening(hfdata[, 1:15], screen = "alpha", width = 36, by = 8,
+                        control = list(nCore = 1, lambda = 0.5))
   expect_s3_class(roll, "rollScreening")
   expect_true(all(c("window", "index", "pizero", "pipos", "pineg",
                     "heterogeneity") %in% names(roll)))
@@ -195,8 +199,9 @@ test_that("rollScreening returns a tidy time series", {
   set.seed(1)
   fac <- matrix(rnorm(nrow(hfdata) * 2), ncol = 2,
                 dimnames = list(NULL, c("MKT", "SMB")))
-  rb <- rollScreening(hfdata[, 1:30], factors = fac, width = 36, by = 12,
-                      control = list(nCore = 1, screen_beta = TRUE))
+  rb <- rollScreening(hfdata[, 1:15], factors = fac, width = 36, by = 12,
+                      control = list(nCore = 1, screen_beta = TRUE,
+                                     lambda = 0.5))
   ## set comparison (locale-independent: avoids C vs UTF-8 sort order)
   expect_setequal(unique(rb$coefficient), c("alpha", "MKT", "SMB"))
   pf <- tempfile(fileext = ".pdf"); pdf(pf); plot(rb); dev.off(); unlink(pf)
@@ -455,14 +460,14 @@ test_that("asymptotic screening does not depend on the bootstrap block length", 
 
 test_that("plot methods accept the graphical arguments documented in '...'", {
   pf <- tempfile(fileext = ".pdf"); pdf(pf); on.exit({dev.off(); unlink(pf)})
-  sc  <- alphaScreening(hfdata[, 1:8], control = list(nCore = 1))
+  ## lambda fixed: only the plotting behaviour is under test here
+  ctr <- list(nCore = 1, lambda = 0.5)
+  sc  <- alphaScreening(hfdata[, 1:8], control = ctr)
   scb <- alphaScreening(hfdata[, 1:8], factors = hfdata[, 50:51],
-                        control = list(nCore = 1, screen_beta = TRUE))
+                        control = c(ctr, screen_beta = TRUE))
   eh  <- exposureHeterogeneity(scb)
-  rl  <- rollScreening(hfdata[, 1:12], width = 40, by = 20,
-                       control = list(nCore = 1))
-  one <- alphaScreening(hfdata[, 1], Y = hfdata[, 11:20],
-                        control = list(nCore = 1))
+  rl  <- rollScreening(hfdata[, 1:12], width = 40, by = 20, control = ctr)
+  one <- alphaScreening(hfdata[, 1], Y = hfdata[, 11:20], control = ctr)
   ## these all used to fail with "matched by multiple actual arguments"
   expect_silent(plot(sc,  main = "screening"))
   expect_silent(plot(one, main = "single fund"))

@@ -58,6 +58,12 @@ plot(sc)                       # peer performance screening plot
 confint(sc, parm = "pipos")    # bootstrap CIs for the outperformance ratios
 ```
 
+On large universes most of the run time goes into the data-driven choice of
+the threshold `lambda`. Two options make this much faster: keep the choice but
+compute it in vectorised form (`control = list(fastAdjust = TRUE)`), or fix the
+threshold outright (`control = list(lambda = 0.5)`). Pairwise tests can also be
+spread over cores with `control = list(nCore = k)`.
+
 ## Please cite the package in publications!
 
 By using `PeerPerformance` you agree to the following rules: 
