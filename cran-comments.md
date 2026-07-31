@@ -12,21 +12,25 @@ for the full list.
 
 * Local: macOS 26.5 (aarch64-apple-darwin20), R 4.5.2
 
-NOT YET RE-RUN FOR 2.4.0 -- do before submitting:
-* win-builder, R-release and R-devel
-* R-hub: Linux and Windows
-
 ## R CMD check results
 
-Local `R CMD check --as-cran`: 0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 2 notes
 
-The note is specific to this machine, where pandoc is not on the PATH of the
-R session; it disappears where pandoc is available:
+Both notes are specific to the local machine and are not package issues:
 
 ```
 * checking top-level files ... NOTE
 Files 'README.md' or 'NEWS.md' cannot be checked without 'pandoc' being installed.
 ```
+pandoc is not on the PATH of the local R session.
+
+```
+* checking HTML version of manual ... NOTE
+Skipping checking HTML validation: 'tidy' doesn't look like recent enough HTML Tidy.
+```
+The local `tidy` is the version shipped with macOS.
+
+Neither note is expected on the CRAN check machines.
 
 ## Reverse dependencies
 
