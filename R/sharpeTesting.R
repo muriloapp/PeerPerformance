@@ -12,7 +12,7 @@
 
   # check if enough data are available for testing
   dxy <- x - y
-  idx <- (!is.nan(dxy) & !is.na(dxy))
+  idx <- is.finite(dxy)
   rets <- cbind(x[idx], y[idx])
   T <- sum(idx)
   if (T < ctr$minObs) {
@@ -26,7 +26,9 @@
   } else {
     # ==> bootstrap approach (iid and circular block bootstrap)
     if (ctr$bBoot == 0) {
-      ctr$bBoot <- sharpeBlockSize(x, y, ctr)
+      # on the complete cases, as the test itself uses: the raw series can
+      # contain NA, for which the block-length routine returns NA
+      ctr$bBoot <- sharpeBlockSize(rets[, 1], rets[, 2], ctr)
     }
     bsids <- bootIndices(T, ctr$nBoot, ctr$bBoot)
     tmp <- sharpeTestBootstrap(rets, bsids, ctr$bBoot, ctr$ttype, ctr$pBoot)

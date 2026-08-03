@@ -527,3 +527,57 @@ test_that("a fund with no usable observation does not abort the screening", {
   expect_silent(sharpeScreening(X, control = ctr))
   expect_silent(msharpeScreening(X, control = ctr))
 })
+
+test_that("non-finite returns are treated exactly like missing values", {
+  ## Regression: the missingness masks used !is.na() & !is.nan(), so an Inf
+  ## counted as an observation and lm() then failed with "NA/NaN/Inf in 'y'".
+  ctr <- list(nCore = 1, lambda = 0.5)
+  A <- hfdata[, 1:5]; A[10, 2] <- Inf
+  B <- hfdata[, 1:5]; B[10, 2] <- NA          # the reference behaviour
+  expect_silent(ra <- alphaScreening(A, control = ctr))
+  rb <- alphaScreening(B, control = ctr)
+  expect_equal(ra$pval, rb$pval, tolerance = 1e-12)
+  expect_identical(ra$npeer, rb$npeer)
+  expect_true(is.finite(ra$alpha[2]))
+  ## the Sharpe routines and the cross-group path too
+  expect_silent(s <- sharpeScreening(A, control = ctr))
+  expect_false(any(is.nan(s$pval)))
+  expect_silent(msharpeScreening(A, control = ctr))
+  expect_silent(alphaScreening(A[, 1], Y = A[, 2:5], control = ctr))
+})
+
+test_that("bBoot = 0 selects the block length on the complete cases", {
+  ## Regression: the block-length routines received the raw series, so with any
+  ## NA they returned NA and bootIndices() then failed with a subscript error.
+  x <- hfdata[, 1]; y <- hfdata[, 2]; x[1:10] <- NA
+  set.seed(1)
+  expect_silent(a <- sharpeTesting(x, y, control = list(type = 2, bBoot = 0,
+                                                        nBoot = 99)))
+  expect_true(is.finite(a$pval) && a$pval >= 0 && a$pval <= 1)
+  set.seed(1)
+  expect_silent(b <- msharpeTesting(x, y, control = list(type = 2, bBoot = 0,
+                                                         nBoot = 99)))
+  expect_true(is.finite(b$pval) && b$pval >= 0 && b$pval <= 1)
+})
+
+test_that("a rank-deficient factor set yields NA coefficients, not an error", {
+  ## Regression: summary(lm)$coef drops coefficients the design cannot
+  ## estimate, so indexing it by position over-ran the table. Coefficients are
+  ## now matched by name and inestimable ones stay NA in their own slot.
+  ctr <- list(nCore = 1, lambda = 0.5, screen_beta = TRUE)
+  f  <- hfdata[, 50]
+  F2 <- cbind(f, f)                      # perfectly collinear
+  F3 <- cbind(f, rep(1, length(f)))      # constant second factor
+  expect_silent(r2 <- alphaScreening(hfdata[, 1:5], factors = F2, control = ctr))
+  expect_equal(dim(r2$pizero), c(3L, 5L))          # alpha + 2 factor rows kept
+  expect_silent(alphaScreening(hfdata[, 1:5], factors = F3, control = ctr))
+  expect_silent(t2 <- alphaTesting(hfdata[, 1], hfdata[, 2], factors = F2,
+                                   screen_beta = TRUE))
+  expect_equal(dim(t2$alpha), c(3L, 2L))
+  ## the aliased coefficient is reported as NA rather than silently taking
+  ## another coefficient's value
+  expect_true(any(is.na(t2$dalpha)))
+  ## cross-group path as well
+  expect_silent(alphaScreening(hfdata[, 1], Y = hfdata[, 11:15], factors = F2,
+                               control = ctr))
+})

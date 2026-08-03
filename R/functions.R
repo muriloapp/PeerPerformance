@@ -89,6 +89,25 @@ processControl <- function(control) {
 
 #@name .coefNames
 #@title Row labels for the screen_beta coefficients (alpha + factor betas)
+#@name .padCoef
+#@title Coefficient table padded to the full set of coefficients
+# summary(lm)$coef and lmtest::coeftest() drop coefficients that the design
+# cannot estimate (collinear or constant factors), so the table can have fewer
+# rows than the model has coefficients; indexing it by position then reads the
+# wrong row or runs off the end. coef(fit) keeps every coefficient, with NA for
+# the aliased ones, so its names give the intended layout. Rows that were
+# dropped stay NA.
+.padCoef <- function(sm, cf) {
+  nms <- names(cf)
+  out <- matrix(NA_real_, nrow = length(nms), ncol = ncol(sm),
+                dimnames = list(nms, colnames(sm)))
+  hit <- intersect(nms, rownames(sm))
+  if (length(hit) > 0L) {
+    out[hit, ] <- sm[hit, , drop = FALSE]
+  }
+  out
+}
+
 .coefNames <- function(factors) {
   nm <- colnames(factors)
   if (is.null(nm)) {

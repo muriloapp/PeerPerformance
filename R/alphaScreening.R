@@ -27,6 +27,7 @@
   }
 
   X <- as.matrix(X)
+  X[!is.finite(X)] <- NA   # Inf/NaN are treated as missing throughout
   T <- nrow(X)
   N <- ncol(X)
   if (N < 2L) {
@@ -44,7 +45,7 @@
   # pval <- dalpha <- tstat <- matrix(data = NA, N, N)
 
   # determine which pairs can be compared (in a matrix way)
-  Y <- 1 * (!is.nan(X) & !is.na(X))
+  Y <- 1 * is.finite(X)   # Inf counts as missing, not as an observation
   YY <- crossprod(Y)  #YY = t(Y) %*% Y # row i indicates how many observations in common with column k
   YY[YY < ctr$minObs] <- 0
   YY[YY > 0] <- 1
@@ -319,10 +320,10 @@ alphaScreening <- compiler::cmpfun(.alphaScreening)
   # tested only when at least 'minObs' usable observations remain. (Previously
   # the factor NAs were ignored and 'minObs' was not enforced at the pair level.)
   if (is.null(factors)) {
-    avail <- colSums(!is.na(dXY))
+    avail <- colSums(is.finite(dXY))
   } else {
     fok   <- stats::complete.cases(factors)          # length T, recycled per column
-    avail <- colSums(!is.na(dXY) & fok)
+    avail <- colSums(is.finite(dXY) & fok)
   }
   selId.in  <- which(avail >= minObs)
   selId.out <- selId.in + i
@@ -347,15 +348,14 @@ alphaScreening <- compiler::cmpfun(.alphaScreening)
 
     # HAC within loop.
     if (!hac) {
-      pvali[row_return, j] <- sfit_lm$coef[row_return, 4]
-      dalphai[row_return, j] <- sfit_lm$coef[row_return, 1]
-      tstati[row_return, j] <- sfit_lm$coef[row_return, 3]
+      sm <- .padCoef(sfit_lm$coef, stats::coef(fit))
     } else {
-      sumfit <- lmtest::coeftest(fit, vcov. = sandwich::vcovHAC(fit))
-      pvali[row_return, j] <- sumfit[row_return, 4]
-      dalphai[row_return, j] <- sumfit[row_return, 1]
-      tstati[row_return, j] <- sumfit[row_return, 3]
+      sm <- .padCoef(lmtest::coeftest(fit, vcov. = sandwich::vcovHAC(fit)),
+                     stats::coef(fit))
     }
+    pvali[row_return, j] <- sm[row_return, 4]
+    dalphai[row_return, j] <- sm[row_return, 1]
+    tstati[row_return, j] <- sm[row_return, 3]
   }
 
   out <- list(dalphai = dalphai, pvali = pvali, tstati = tstati)

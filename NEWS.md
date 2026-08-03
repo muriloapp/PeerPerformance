@@ -13,6 +13,21 @@
   called `lm()` on every column, so an all-`NA` fund stopped the whole run with
   "0 (non-NA) cases" even though the pairwise stage handles such a column
   correctly. Its summary statistics are now returned as `NA`
+- Non-finite returns are treated as missing. The missingness masks tested only
+  `is.na()` and `is.nan()`, so an `Inf` counted as an observation and the fit
+  then failed with "NA/NaN/Inf in 'y'". `Inf` and `NaN` are now normalised to
+  `NA` on entry, and a series containing one gives exactly the result it would
+  give with `NA` in the same position
+- `bBoot = 0` (data-driven block length) works on series containing `NA` in
+  `sharpeTesting()` and `msharpeTesting()`: the block-length routines were
+  passed the raw series rather than the concordant observations the test
+  itself uses, so they returned `NA` and the bootstrap then failed with a
+  subscript error
+- A factor set the design cannot fully estimate (collinear or constant
+  factors) no longer aborts `screen_beta` screening or `alphaTesting()`.
+  `summary(lm)` omits inestimable coefficients, so indexing its table by
+  position over-ran it and could read a neighbouring coefficient; coefficients
+  are now matched by name and inestimable ones are reported as `NA`
 
 # Version 2.4.0 (DA)
 - New optional `control$fastAdjust` (default `FALSE`): the truncated-normal

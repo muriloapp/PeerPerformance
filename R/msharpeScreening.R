@@ -22,6 +22,7 @@
 
   # size of inputs and outputs
   X <- as.matrix(X)
+  X[!is.finite(X)] <- NA   # Inf/NaN are treated as missing throughout
   T <- nrow(X)
   N <- ncol(X)
   if (N < 2L) {
@@ -30,7 +31,7 @@
   pval <- dmsharpe <- tstat <- matrix(data = NA, N, N)
 
   # determine which pairs can be compared (in a matrix way)
-  Y <- 1 * (!is.nan(X) & !is.na(X))
+  Y <- 1 * is.finite(X)   # Inf counts as missing, not as an observation
   YY <- crossprod(Y)  #YY = t(Y) %*% Y # row i indicates how many observations in common with column k
   pairLens <- YY[upper.tri(YY)]  # pairwise complete-case lengths (before thresholding)
   YY[YY < ctr$minObs] <- 0
@@ -262,7 +263,7 @@ msharpeScreening <- compiler::cmpfun(.msharpeScreening)
   Y <- matrix(rdata[, (i + 1):N], nrow = T, ncol = nPeer)
 
   dXY <- X - Y
-  idx <- (!is.nan(dXY) & !is.na(dXY))
+  idx <- is.finite(dXY)
   X[!idx] <- NA
   Y[!idx] <- NA
   nObs <- colSums(idx)

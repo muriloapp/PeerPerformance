@@ -22,7 +22,7 @@
     dxy <- xi - Y[, j]
     # usable rows: account for missing factors as lm(na.omit) would
     if (is.null(factors)) {
-      ok <- !is.na(dxy) & !is.nan(dxy)
+      ok <- is.finite(dxy)
     } else {
       ok <- stats::complete.cases(dxy, factors)
     }
@@ -42,9 +42,10 @@
       next  # (near) deterministic differential: skip to avoid spurious significance
     }
     if (!hac) {
-      sm <- sfit$coef
+      sm <- .padCoef(sfit$coef, stats::coef(fit))
     } else {
-      sm <- lmtest::coeftest(fit, vcov. = sandwich::vcovHAC(fit))
+      sm <- .padCoef(lmtest::coeftest(fit, vcov. = sandwich::vcovHAC(fit)),
+                     stats::coef(fit))
     }
     pvali[row_return, j]   <- sm[row_return, 4]
     dalphai[row_return, j] <- sm[row_return, 1]
@@ -59,6 +60,8 @@ alphaScreeningXYi <- compiler::cmpfun(.alphaScreeningXYi)
   ctr <- processControl(control)
   X <- as.matrix(X)
   Y <- as.matrix(Y)
+  X[!is.finite(X)] <- NA   # Inf/NaN are treated as missing throughout
+  Y[!is.finite(Y)] <- NA
   T <- nrow(X)
   if (nrow(Y) != T) {
     stop("'X' and 'Y' must have the same number of rows (time periods)")
@@ -140,7 +143,7 @@ alphaScreeningXY <- compiler::cmpfun(.alphaScreeningXY)
   xi <- X[, i]
   for (j in 1:nY) {
     dxy <- xi - Y[, j]
-    ok <- !is.na(dxy) & !is.nan(dxy)
+    ok <- is.finite(dxy)
     if (sum(ok) < minObs) {
       next
     }
@@ -177,6 +180,8 @@ sharpeScreeningXYi <- compiler::cmpfun(.sharpeScreeningXYi)
   }
   X <- as.matrix(X)
   Y <- as.matrix(Y)
+  X[!is.finite(X)] <- NA   # Inf/NaN are treated as missing throughout
+  Y[!is.finite(Y)] <- NA
   T <- nrow(X)
   if (nrow(Y) != T) {
     stop("'X' and 'Y' must have the same number of rows (time periods)")
@@ -191,7 +196,7 @@ sharpeScreeningXYi <- compiler::cmpfun(.sharpeScreeningXYi)
   # cross-pair complete-case length (workers select by length)
   # only needed for the bootstrap test, and only for pairs passing 'minObs',
   # so that the asymptotic path never depends on 'bBoot'
-  pairLens <- crossprod(1 * (!is.na(X) & !is.nan(X)), 1 * (!is.na(Y) & !is.nan(Y)))
+  pairLens <- crossprod(1 * is.finite(X), 1 * is.finite(Y))
   bsids <- NULL
   if (ctr$type == 2) {
     bsids <- bootIndicesByLen(pairLens[pairLens >= ctr$minObs],
@@ -250,7 +255,7 @@ sharpeScreeningXY <- compiler::cmpfun(.sharpeScreeningXY)
   xi <- X[, i]
   for (j in 1:nY) {
     dxy <- xi - Y[, j]
-    ok <- !is.na(dxy) & !is.nan(dxy)
+    ok <- is.finite(dxy)
     if (sum(ok) < minObs) {
       next
     }
@@ -287,6 +292,8 @@ msharpeScreeningXYi <- compiler::cmpfun(.msharpeScreeningXYi)
   }
   X <- as.matrix(X)
   Y <- as.matrix(Y)
+  X[!is.finite(X)] <- NA   # Inf/NaN are treated as missing throughout
+  Y[!is.finite(Y)] <- NA
   T <- nrow(X)
   if (nrow(Y) != T) {
     stop("'X' and 'Y' must have the same number of rows (time periods)")
@@ -301,7 +308,7 @@ msharpeScreeningXYi <- compiler::cmpfun(.msharpeScreeningXYi)
   # cross-pair complete-case length (workers select by length)
   # only needed for the bootstrap test, and only for pairs passing 'minObs',
   # so that the asymptotic path never depends on 'bBoot'
-  pairLens <- crossprod(1 * (!is.na(X) & !is.nan(X)), 1 * (!is.na(Y) & !is.nan(Y)))
+  pairLens <- crossprod(1 * is.finite(X), 1 * is.finite(Y))
   bsids <- NULL
   if (ctr$type == 2) {
     bsids <- bootIndicesByLen(pairLens[pairLens >= ctr$minObs],
