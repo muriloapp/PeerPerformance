@@ -1,12 +1,29 @@
 ## Submission summary
 
-Feature and robustness update of PeerPerformance (2.3.2 -> 2.4.0). It adds
-cross-group and rolling-window screening, bootstrap confidence intervals for
-the peer performance ratios, a factor-exposure heterogeneity measure, a set of
-S3 methods (print / summary / plot / as.data.frame / confint), a vignette, and
-a reproducible Monte-Carlo validation script. It also fixes a bootstrap
-resampling bug on unbalanced panels and several robustness issues; see NEWS.md
-for the full list.
+This is a bug-fix release, submitted shortly after 2.4.0. Apologies for the
+quick turnaround: 2.4.0 introduced no new defect, but a pre-existing one was
+found immediately after its acceptance and it silently biases a statistical
+result, so it seemed better to correct it than to leave it in place.
+
+`bootIndices()` generated the circular block bootstrap by drawing
+`floor(T / bBoot)` blocks. When the block length did not divide the number of
+concordant observations, the last `T %% bBoot` indices of every bootstrap
+sample kept their initial value of zero, and because the callers remap indices
+with `1 + ids %% T` each of those zeros selected the first observation. At
+`T = 50` and `bBoot = 6` this over-sampled observation 1 by a factor of about
+three and biased the bootstrap null distribution, with no error, warning or
+`NA` to signal it. The routine now draws `ceiling(T / bBoot)` blocks and keeps
+the first `T` indices.
+
+The default is `bBoot = 1` (i.i.d. resampling), which was never affected, and
+results are unchanged whenever `bBoot` divides `T`.
+
+A second fix is included: a fund with no usable observation no longer aborts a
+screening (`infoFund()` called `lm()` on every column, so an all-`NA` fund
+stopped the run with "0 (non-NA) cases"); its summary statistics are now
+returned as `NA`.
+
+Both fixes have regression tests.
 
 ## Test environments
 
@@ -14,7 +31,19 @@ for the full list.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 2 notes
+
+```
+* checking CRAN incoming feasibility ... NOTE
+Days since last update: 1
+```
+Explained above.
+
+```
+* checking for future file timestamps ... NOTE
+unable to verify current time
+```
+Local clock/network issue, not a package issue.
 
 ## Reverse dependencies
 

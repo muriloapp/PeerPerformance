@@ -263,13 +263,19 @@ msharpe <- function(X, level = 0.9, na.rm = TRUE, na.neg = TRUE) {
     alpha_ <- rep(NA, ncol(X))
   }
 
+  # A fund with no usable observation is left as NA: lm() would abort the whole
+  # screening with "0 (non-NA) cases", even though the pairwise stage handles
+  # such a column correctly.
   if (is.null(factors)) {
     for (col in 1:ncol(X)) {
+      if (!any(is.finite(X[, col]))) next
       fit <- stats::lm(X[,col] ~ 1)
       alpha_[col] <- fit$coef[1]
     }
   } else {
+    fok <- stats::complete.cases(factors)
     for (col in 1:ncol(X)) {
+      if (!any(is.finite(X[, col]) & fok)) next
       fit <- stats::lm(X[,col] ~ 1 + factors)
       if(screen_beta){
         alpha_[, col] <- fit$coef
@@ -331,17 +337,24 @@ bootIndicesByLen <- compiler::cmpfun(.bootIndicesByLen)
     idsBoot <- matrix(sample.int(T, size = T * nBoot, replace = TRUE),
                       nrow = T, ncol = nBoot)
   } else {
+    # Draw ceiling(T / bBoot) blocks and keep the first T indices. Using
+    # floor() left the last T %% bBoot entries at their initial value of zero
+    # whenever the block length did not divide the sample size; the callers
+    # remap indices with '1 + ids %% T', so every such zero silently became
+    # observation 1 and over-sampled it (a factor of three at T = 50,
+    # bBoot = 6). When bBoot divides T, ceiling() equals floor() and the draws
+    # are unchanged.
+    l <- ceiling(T/bBoot)
+    ids <- c(1:T, 1:bBoot)
     for (i in 1:nBoot) {
-      l <- floor(T/bBoot)
-      ids <- c(1:T, 1:bBoot)
-      seqb <- vector("integer", T)
+      seqb <- vector("integer", l * bBoot)
       start.points <- sample.int(T, size = l, replace = TRUE)
       for (j in (1:l)) {
         start <- start.points[j]
         seqb[((j - 1) * bBoot + 1):(j * bBoot)] <- ids[start:(start +
                                                                 bBoot - 1)]
       }
-      idsBoot[, i] <- seqb
+      idsBoot[, i] <- seqb[1:T]
     }
   }
   return(idsBoot)

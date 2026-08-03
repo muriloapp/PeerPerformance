@@ -1,5 +1,5 @@
 Package: PeerPerformance
-Version: 2.4.0
+Version: 2.4.1
 Title: Luck-Corrected Peer Performance Analysis in R
 Authors@R: c(person("David", "Ardia", role = c("aut", "cre", "cph", "fnd"),
              email = "david.ardia.ch@gmail.com",

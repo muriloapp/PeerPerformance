@@ -476,3 +476,54 @@ test_that("plot methods accept the graphical arguments documented in '...'", {
   ## and the defaults still apply when nothing is passed
   expect_silent(plot(sc)); expect_silent(plot(eh)); expect_silent(plot(rl))
 })
+
+test_that("bootIndices fills every row when bBoot does not divide the sample", {
+  ## Regression: floor(T/bBoot) blocks left the last T %% bBoot entries at zero,
+  ## and the callers' '1 + ids %% T' remap turned every zero into observation 1.
+  for (p in list(c(50, 6), c(37, 4), c(60, 7), c(23, 5))) {
+    Tn <- p[1]; b <- p[2]
+    set.seed(11)
+    ids <- PeerPerformance:::bootIndices(Tn, 25, b)
+    expect_equal(dim(ids), c(Tn, 25L))
+    expect_false(any(is.na(ids)))
+    expect_true(all(ids >= 1 & ids <= Tn))     # no zeros, nothing out of range
+  }
+  ## observation 1 must not be over-represented after the remap
+  set.seed(12)
+  B   <- PeerPerformance:::bootIndices(50, 3000, 6)
+  frq <- tabulate(1 + B %% 50, nbins = 50)
+  expect_lt(abs(frq[1] / median(frq[-1]) - 1), 0.15)
+
+  ## when bBoot divides T the draws are unchanged (backward compatible)
+  set.seed(13); a <- PeerPerformance:::bootIndices(48, 20, 6)
+  set.seed(13); b2 <- PeerPerformance:::bootIndices(48, 20, 6)
+  expect_identical(a, b2)
+  expect_true(all(a >= 1 & a <= 48))
+
+  ## end to end: a block bootstrap screening whose pair length is not a
+  ## multiple of the block length still returns valid p-values
+  set.seed(14)
+  X <- matrix(rnorm(50 * 4, 0.01, 0.05), 50, 4)
+  s <- sharpeScreening(X, control = list(nCore = 1, type = 2, bBoot = 6,
+                                         nBoot = 99, lambda = 0.5))
+  ok <- !is.na(s$pval)
+  expect_true(any(ok))
+  expect_true(all(s$pval[ok] >= 0 & s$pval[ok] <= 1))
+  expect_false(any(is.nan(s$pval)))
+})
+
+test_that("a fund with no usable observation does not abort the screening", {
+  ## Regression: infoFund() called lm() on every column, so an all-NA fund
+  ## aborted the whole screening with "0 (non-NA) cases".
+  X <- hfdata[, 1:5]
+  X[, 3] <- NA
+  ctr <- list(nCore = 1, lambda = 0.5)
+  expect_silent(a <- alphaScreening(X, control = ctr))
+  expect_equal(length(a$pizero), 5L)
+  expect_true(is.na(a$alpha[3]))               # the empty fund reports NA
+  expect_true(all(is.finite(a$alpha[-3])))     # the others are unaffected
+  ## the same column with factors, and the other two screenings
+  expect_silent(alphaScreening(X, factors = hfdata[, 50, drop = FALSE], control = ctr))
+  expect_silent(sharpeScreening(X, control = ctr))
+  expect_silent(msharpeScreening(X, control = ctr))
+})

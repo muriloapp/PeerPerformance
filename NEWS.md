@@ -1,3 +1,19 @@
+# Version 2.4.1 (DA)
+- Fixed the circular block bootstrap when the block length does not divide the
+  number of concordant observations. `bootIndices()` drew `floor(T / bBoot)`
+  blocks, so the last `T %% bBoot` indices of every bootstrap sample kept their
+  initial value of zero; because the callers remap indices with
+  `1 + ids %% T`, each of those zeros silently selected the first observation.
+  At `T = 50` and `bBoot = 6` this over-sampled observation 1 by a factor of
+  about three and biased the bootstrap null distribution, with no error or
+  `NA` to signal it. The routine now draws `ceiling(T / bBoot)` blocks and
+  keeps the first `T` indices. Results are unchanged when `bBoot` divides `T`,
+  and the default `bBoot = 1` was never affected
+- A fund with no usable observation no longer aborts a screening: `infoFund()`
+  called `lm()` on every column, so an all-`NA` fund stopped the whole run with
+  "0 (non-NA) cases" even though the pairwise stage handles such a column
+  correctly. Its summary statistics are now returned as `NA`
+
 # Version 2.4.0 (DA)
 - New optional `control$fastAdjust` (default `FALSE`): the truncated-normal
   bias correction of `pi0` inverts its monotone map for the whole vector at
