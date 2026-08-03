@@ -95,10 +95,27 @@ genFac   <- function(rho = 0.25) {           # common factor => cross-sectional 
   X <- matrix(stats::rnorm(TT * N, 0, 0.04 * sqrt(1 - rho)), TT, N)
   0.005 + X + f
 }
+## AR(1) idiosyncratic returns plus an AR(1) common factor. Calibrated to
+## reproduce BOTH the serial and the cross-sectional dependence of hfdata, so
+## that the resulting floor is the right benchmark for the empirical section.
+genBoth  <- function(rho = 0.20, rc = 0.25) {
+  ar1 <- function(n, s) {
+    e <- stats::rnorm(n, 0, s * sqrt(1 - rho^2))
+    x <- numeric(n); x[1] <- stats::rnorm(1, 0, s)
+    for (t in 2:n) x[t] <- rho * x[t - 1] + e[t]
+    x
+  }
+  f <- ar1(TT, 0.04 * sqrt(rc))
+  X <- matrix(0, TT, N)
+  for (j in seq_len(N)) X[, j] <- ar1(TT, 0.04 * sqrt(1 - rc))
+  0.005 + X + f
+}
 gens <- list("i.i.d. Gaussian (reference)" = genGauss,
              "t(5) innovations"            = genT5,
+             "AR(1), rho = 0.2"            = function() genAR1(0.20),
              "AR(1), rho = 0.3"            = genAR1,
-             "common factor, rho = 0.25"   = genFac)
+             "common factor, rho = 0.25"   = genFac,
+             "AR(1) 0.2 + factor 0.25"     = genBoth)
 cat(sprintf("    %-28s %14s %14s\n", "return process", "pi0 (s.e.)", "pi+ + pi- (s.e.)"))
 for (nm in names(gens)) {
   m <- matrix(NA_real_, RS, 2)
@@ -110,6 +127,38 @@ for (nm in names(gens)) {
               mean(m[, 1]), stats::sd(m[, 1])/sqrt(RS),
               mean(m[, 2]), stats::sd(m[, 2])/sqrt(RS)))
 }
+
+## ===========================================================================
+## (E2) The maximum pi+ over the cross-section, under the calibrated null
+##
+## Picking the best fund out of N is an extreme-value operation: max_i pi+_i
+## must be judged against the distribution of that maximum under the null,
+## not against zero. Without this, the single most striking number in any
+## applied screening has no benchmark at all.
+## ===========================================================================
+cat("\n(E2) Largest pi+ across the cross-section, calibrated null (AR(1) 0.2 +",
+    "factor 0.25)\n\n")
+mx <- numeric(RS)
+for (r in seq_len(RS)) {
+  sc <- alphaScreening(genBoth(), control = ctr)
+  mx[r] <- max(sc$pipos, na.rm = TRUE)
+}
+data("hfdata")
+set.seed(1234)
+empmax <- max(alphaScreening(hfdata, control = ctr)$pipos, na.rm = TRUE)
+cat(sprintf("    null max pi+ : mean %.3f (s.d. %.3f), 95th pct %.3f\n",
+            mean(mx), stats::sd(mx), stats::quantile(mx, 0.95)))
+cat(sprintf("    hfdata max pi+ : %.3f -> %.0f%% of null replications exceed it\n",
+            empmax, 100 * mean(mx >= empmax)))
+
+## Dependence actually present in hfdata, for reference
+ac1 <- apply(hfdata, 2, function(z) {
+  z <- z[is.finite(z)]; stats::cor(z[-1], z[-length(z)])
+})
+cc <- stats::cor(hfdata, use = "pairwise.complete.obs")
+cat(sprintf("    hfdata dependence: mean lag-1 AC %.3f (%.0f%% above 0.2),",
+            mean(ac1, na.rm = TRUE), 100 * mean(ac1 > 0.2, na.rm = TRUE)))
+cat(sprintf(" mean pairwise cor %.3f\n", mean(cc[upper.tri(cc)], na.rm = TRUE)))
 
 ## ===========================================================================
 ## (F) Size of the modified Sharpe test: asymptotic vs studentized bootstrap
