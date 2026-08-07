@@ -129,6 +129,41 @@ for (nm in names(gens)) {
 }
 
 ## ===========================================================================
+## (E1) Does the package's own HAC option repair the inflated floor?
+##
+## The article recommends hac = TRUE for autocorrelated series, so that
+## recommendation should rest on evidence. Both columns are computed on the
+## SAME replications, so they differ only in the hac setting.
+## ===========================================================================
+cat("\n(E1) False-discovery floor with and without HAC standard errors\n\n")
+hacGens <- list("i.i.d. Gaussian"           = genGauss,
+                "AR(1), rho = 0.2"          = function() genAR1(0.20),
+                "AR(1), rho = 0.3"          = genAR1,
+                "AR(1) 0.2 + factor 0.25"   = genBoth)
+cat(sprintf("    %-26s %18s %18s\n", "null process",
+            "floor hac = FALSE", "floor hac = TRUE"))
+for (nm in names(hacGens)) {
+  m <- matrix(NA_real_, RS, 2)
+  for (r in seq_len(RS)) {
+    X <- hacGens[[nm]]()
+    m[r, 1] <- 1 - mean(alphaScreening(X, control = ctr)$pizero, na.rm = TRUE)
+    m[r, 2] <- 1 - mean(alphaScreening(X, control = c(ctr, list(hac = TRUE)))$pizero,
+                        na.rm = TRUE)
+  }
+  cat(sprintf("    %-26s   %.3f (%.3f)     %.3f (%.3f)\n", nm,
+              mean(m[, 1]), stats::sd(m[, 1])/sqrt(RS),
+              mean(m[, 2]), stats::sd(m[, 2])/sqrt(RS)))
+}
+## the same contrast on the real data
+data("hfdata")
+for (h in c(FALSE, TRUE)) {
+  set.seed(1234)
+  sc <- alphaScreening(hfdata, control = c(ctr, list(hac = h)))
+  cat(sprintf("    hfdata, hac = %-5s: non-tie mass %.3f\n", h,
+              1 - mean(sc$pizero, na.rm = TRUE)))
+}
+
+## ===========================================================================
 ## (E2) The maximum pi+ over the cross-section, under the calibrated null
 ##
 ## Picking the best fund out of N is an extreme-value operation: max_i pi+_i
